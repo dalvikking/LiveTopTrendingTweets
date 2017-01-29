@@ -1,0 +1,53 @@
+apply plugin: 'war' 
+apply plugin: 'eclipse-wtp'
+
+version = '1.0'
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+webAppDirName = 'WebContent'
+
+configurations {
+    war {}
+}
+
+artifacts {
+    war tasks.war
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/']
+        }
+        resources {
+            srcDirs = ['resources']
+        }
+    }
+}
+
+war { 
+  println 'making webui service war'
+  archiveName = 'webui.war'
+  outputs.upToDateWhen { false }
+  /*
+  doLast {
+     println 'unpacking webui.war'
+     tasks.unzip.execute()
+     def zipFile = file('build/libs/webui.war')
+     delete(zipFile)
+     tasks.copyWarTask.execute()
+  }
+  */
+}
+
+
+dependencies {
+    compile project(':com.dalvik.tomcat.deployer')
+    compile project(':com.dalvik.utils')
+    compile fileTree(dir: "${webAppDirName}/WEB-INF/lib", include: '*.jar')
+}

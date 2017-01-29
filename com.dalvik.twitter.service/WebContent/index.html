@@ -1,0 +1,206 @@
+<html lang="en">
+<head>
+<link rel="stylesheet"
+	href="https://ajax.googleapis.com/ajax/libs/angular_material/1.0.0/angular-material.min.css">
+<script type="text/javascript"
+	src="https://cdnjs.cloudflare.com/ajax/libs/angular-websocket/2.0.1/angular-websocket.js"></script>
+<script type="text/javascript"
+	src="https://cdnjs.cloudflare.com/ajax/libs/angular-websocket/2.0.1/angular-websocket.min.js"></script>
+<script type="text/javascript"
+	src="https://cdnjs.cloudflare.com/ajax/libs/angular-websocket/2.0.1/angular-websocket.min.js.map"></script>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular-animate.min.js"></script>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular-aria.min.js"></script>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular-messages.min.js"></script>
+<script
+	src="https://ajax.googleapis.com/ajax/libs/angular_material/1.0.0/angular-material.min.js"></script>
+<link rel="stylesheet"
+	href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<script language="javascript">
+	var sockets = [];
+	var globalTrend = [];
+	var app = angular.module('webui', [ 'ngMaterial' ]);
+
+	app
+			.controller(
+					'AppCtrl',
+					function($scope, $http, $mdSidenav, $mdToast) {
+
+						var last = {
+							bottom : false,
+							top : true,
+							left : false,
+							right : true
+						};
+
+						$scope.toastPosition = angular.extend({}, last);
+
+						$scope.getToastPosition = function() {
+							sanitizePosition();
+
+							return Object.keys($scope.toastPosition).filter(
+									function(pos) {
+										return $scope.toastPosition[pos];
+									}).join(' ');
+						};
+
+						function sanitizePosition() {
+							var current = $scope.toastPosition;
+
+							if (current.bottom && last.top)
+								current.top = false;
+							if (current.top && last.bottom)
+								current.bottom = false;
+							if (current.right && last.left)
+								current.left = false;
+							if (current.left && last.right)
+								current.right = false;
+
+							last = angular.extend({}, current);
+						}
+
+						$scope.showSimpleToast = function(trend) {
+							var pinTo = $scope.getToastPosition();
+
+							$mdToast.show($mdToast.simple().textContent(
+									'Loading trend for topic ' + trend.name)
+									.position(pinTo).hideDelay(3000));
+						};
+
+						$scope.startSelectedTrendStream = function(
+								selectedTrend) {
+
+							var selectedTrendName = selectedTrend.name;
+							var selectedElement = document
+									.getElementById(selectedTrendName);
+							var parentElemenlChildrens = document
+									.getElementById("trendList").childNodes;
+
+							selectedTrend.woeId = 23424848;
+
+							//close all sockets before starting new one
+							for (s in sockets) {
+								sockets[s].close();
+							}
+							// clear old tweets
+							var parentElement = document
+									.getElementById("tweets");
+							while (parentElement.firstChild) {
+								parentElement
+										.removeChild(parentElement.firstChild);
+							}
+							$scope.startStream(selectedTrend);
+							$scope.showSimpleToast(selectedTrend);
+						}
+
+						$scope.getTasks = function() {
+							$http
+									.get(
+											"http://localhost:8888/twitter/trends/23424848")
+									.success(function(data) {
+										$scope.topTrends = data.trends;
+										globalTrend = data.trends;
+										console.log(data);
+									});
+						};
+						$scope.getTasks();
+
+						$scope.startStream = function(trend) {
+
+							var taskSocket = new WebSocket(
+									"ws://localhost:8888/twitter/liveTrendingStatus");
+
+							sockets.push(taskSocket);
+
+							taskSocket.onopen = function(message) {
+								var requestJson = JSON.stringify(trend);
+								taskSocket.send(requestJson);
+							}
+							taskSocket.onmessage = function(message) {
+								$scope.tasks = JSON.parse(message.data);
+
+								var parentElement = document
+										.getElementById("tweets");
+
+								var itemNode = document
+										.createElement("md-card");
+
+								// prepare header
+								var itemCardHeader = document
+										.createElement("md-card-header");
+								itemNode.appendChild(itemCardHeader);
+								var avtarTag = document
+										.createElement("md-card-avatar");
+								itemCardHeader.appendChild(avtarTag);
+								var imgTag = document.createElement("img");
+								imgTag.setAttribute("src",
+										$scope.tasks.user.profileImageUrl);
+								itemCardHeader.appendChild(imgTag);
+								avtarTag.appendChild(imgTag);
+
+								// prepare content
+								var itemContentNode = document
+										.createElement("md-card-content");
+								itemContentNode.setAttribute("style",
+										"width: 100%;")
+								itemNode.appendChild(itemContentNode);
+								var headingNode = document.createElement("h2");
+								itemContentNode.appendChild(headingNode);
+								var headingText = document
+										.createTextNode($scope.tasks.user.name);
+								headingNode.appendChild(headingText);
+								var statusNode = document.createElement("p");
+								itemContentNode.appendChild(statusNode);
+								var statusText = document
+										.createTextNode($scope.tasks.text);
+								statusNode.appendChild(statusText);
+								parentElement.insertBefore(itemNode,
+										parentElement.children[0]);
+								$scope.$apply();
+							};
+							taskSocket.onclose = function() {
+								$scope.message = {
+									type : "danger",
+									short : "Socket error",
+									long : "An error occured with the WebSocket."
+								};
+								$scope.$apply();
+							}
+						}
+					});
+</script>
+</head>
+<body ng-app="webui" ng-cloak>
+	<div layout="row" ng-controller="AppCtrl" style="height: inherit">
+		<div layout="column" style="height: inherit">
+			<md-sidenav class="md-sidenav-left md-whiteframe-z2 profileSidenav"
+				md-component-id="left" md-is-locked-open="$mdMedia('gt-sm')"
+				style="height: inherit"> <md-toolbar layout="row"
+				class="md-hue-2">
+			<h1 class="md-toolbar-tools" layout-align-gt-sm="center">Top
+				Trending Tweets</h1>
+			</md-toolbar> <md-content> <md-list id="trendList"> <md-subheader
+				class="md-no-sticky">Top Trending Tweets of India</md-subheader> <md-list-item
+				ng-repeat="trend in topTrends"> <md-button
+				ng-click="startSelectedTrendStream(trend)" layout-align="left"
+				style="width: 100%" class="md-primary md-hue-1" id="{{trend.name}}">{{trend.name}}</md-button>
+			<md-divider ng-if="!$last"></md-divider> </md-list-item> </md-list> </md-content> </md-sidenav>
+		</div>
+		<div layout="column" md-content layout-padding md-whiteframe-5dp
+			style="width: 100%; overflow-x: hidden">
+			<md-progress-linear md-mode="indeterminate" id="loader"
+				style="opacity: 0.5 ; overflow-x:hidden"></md-progress-linear>
+			<div class='md-padding' layout="row" layout-wrap md-whiteframe-5dp>
+				<div id="tweets"
+					style="overflow: auto; height: inherit; overflow-x: hidden; width: 100%">
+				</div>
+			</div>
+		</div>
+	</div>
+	</div>
+</body>
+</html>

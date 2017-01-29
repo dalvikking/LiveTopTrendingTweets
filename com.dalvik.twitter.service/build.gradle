@@ -1,0 +1,62 @@
+apply plugin: 'war' 
+apply plugin: 'eclipse-wtp'
+
+version = '1.0'
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+webAppDirName = 'WebContent'
+
+configurations {
+    war {}
+}
+
+artifacts {
+    war tasks.war
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/']
+        }
+        resources {
+            srcDirs = ['resources']
+        }
+    }
+}
+
+war { 
+  println 'making twitter service war'
+  archiveName = 'twitter.war'
+  outputs.upToDateWhen { false }
+  /*
+  doLast {
+     println 'unpacking twitter.war'
+     tasks.unzip.execute()
+     def zipFile = file('build/libs/twitter.war')
+     delete(zipFile)
+     tasks.copyWarTask.execute()
+  }
+  */
+}
+
+
+dependencies {
+    compile project(':com.dalvik.tomcat.deployer')
+    compile project(':com.dalvik.utils')
+    compile fileTree(dir: "${webAppDirName}/WEB-INF/lib", include: '*.jar')
+    compile "javax.ws.rs:jsr311-api:1.1.1"
+    compile 'com.sun.jersey:jersey-server:1.13'
+    compile 'com.sun.jersey:jersey-core:1.13'
+    compile 'com.sun.jersey:jersey-servlet:1.13'
+    compile "com.sun.jersey:jersey-json:1.13"
+    compile group: 'com.sun.jersey.contribs', name: 'jersey-multipart', version: '1.13'
+    compile group: 'uk.com.robust-it', name: 'cloning', version: '1.8.5'
+    compile group: 'org.twitter4j', name: 'twitter4j-core', version: '4.0.1'
+    compile group: 'org.twitter4j', name: 'twitter4j-stream', version: '4.0.2'
+}

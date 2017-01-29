@@ -1,0 +1,35 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+version = '1.0'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+task fatJar(type: Jar)  {
+	manifest {
+        attributes 'Implementation-Title': 'com.dalvik.utils',
+        	'Implementation-Version': version
+    }
+    baseName = project.name + '-all'
+    from {
+              configurations.compile.collect {
+                  it.isDirectory() ? it : zipTree(it)
+              }
+              configurations.runtime.collect {
+                  it.isDirectory() ? it : zipTree(it)
+              }
+          }
+    with jar
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    compile fileTree(dir: 'lib', include: '*.jar')
+    testCompile 'junit:junit:4.12'
+    compile 'com.google.code.gson:gson:2.2.4'
+    compile group: 'postgresql', name: 'postgresql', version: '9.0-801.jdbc4'
+}

@@ -1,0 +1,6 @@
+include ':com.dalvik.tomcat.deployer'
+include 'com.dalvik.utils'
+project(':com.dalvik.tomcat.deployer').projectDir = new File(settingsDir, '../com.dalvik.tomcat.deployer')
+project(':com.dalvik.utils').projectDir = new File(settingsDir, '../com.dalvik.utils')
+
+rootProject.name = 'com.dalvik.twitter.service'
